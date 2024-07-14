@@ -3,35 +3,31 @@
 #include "stdlib.h"
 #include "stdio.h"
 
-typedef enum GAMESTATE {
-    MAIN_MENU = 1,
-    RUNNING = 2,
-    PAUSE = 3,
-    STOP = 0
-} GAMESTATE;
-
-void clearBuffer() {
-    char c;
-    while ((c = getchar()) != '\n' && c !=EOF) {}
-}
 
 int main (int argc, char** arvg) {
-    GAMESTATE gameState = RUNNING;
 
+    int screenWidth = 1200;
+    int screenHeigth = 800;
 
-    int input;
+    InitWindow(screenWidth, screenHeigth, "Pong - Raylib/C implementation");
 
-    while(gameState == RUNNING) {
-        printf("Probando cambiar el estado de un enum con un valor puntal.\n");
-        printf("Escribir '69420' para cambiar el estado de RUNNING a STOP.\n");
-        printf("input: ");
+    // Loading a png of the title screen
+    Image titleScreen = LoadImage("./resources/titleScreen.png");
+    Texture2D texture = LoadTextureFromImage(titleScreen);
 
-        scanf("%5d", &input);
-        clearBuffer();
+    UnloadImage(titleScreen);
 
-        if (input == 69420) {
-            gameState = STOP;
-        }
+    SetTargetFPS(60);
+
+    while(!WindowShouldClose()) {
+        BeginDrawing();
+        ClearBackground(RAYWHITE);
+        DrawTexture(texture, 0, 0, RAYWHITE);
+
+        EndDrawing();
     }
+
+    UnloadTexture(texture);
+    CloseWindow();
 }
 
