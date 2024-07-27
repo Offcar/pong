@@ -1,16 +1,30 @@
 #include "raylib.h"
-#include "stdio.h"
 
+typedef struct {
+    int x;
+    int y;
+    int speed;
+    int height;
+    int width;
+} Paddle;
 
-void checkUserInput(Vector2 *p1, Vector2 *p2, int pSpeed, int pLenght, int isPlayer2Enabled);
+typedef struct {
+    int x;
+    int y;
+    int radius;
+    int speedX;
+    int speedY;
+} Ball;
 
-void ballSpeedUp(Vector4 *ball, int xspeedValue, int yspeedValue);
+typedef enum {
+} GAMESTATUS;
 
-void ballUpdate(Vector4 *ball);
+typedef enum {
+    WAIT,
+    RUNNING,
+    END,
+} ROUNDSTATUS;
 
-void ballBounceCheck(Vector4 *ball);
-
-void roundStart();
 
 #define SWIDTH 800
 #define SHEIGHT 500
@@ -18,93 +32,110 @@ void roundStart();
 #define BOTTOM SHEIGHT - TOP
 
 
-int main (int argc, char** arvg) {
-    int pStartX = 10;
-    int pLenght = 100;
-    int pWidth = 20;
-    int pSpeed = 30;
+void calculatePlayer(Paddle *p, KeyboardKey up, KeyboardKey down) {
+    if (IsKeyDown(up)) {
+        if (p->y - p->speed <= TOP) {
+            p->y = TOP;
+        } else {
+            p->y -= p->speed;
+        }
+    }
 
-    int p2Enabled = 1;
+    if (IsKeyDown(down)) {
+        if (p->y + p->speed + p->height >= BOTTOM) {
+            p->y = BOTTOM - p->height;
+        } else {
+            p->y += p->speed;
+        }
+    }
+}
 
-    int borderTop = 30;
-    int borderBottom = SHEIGHT - borderTop;
+void calculateCPU(Paddle *CPU) {}
 
+void launchBall() {
+
+}
+
+void ballLaunch(Ball *ball, int speedX, int speedY) {
+    if(GetRandomValue(0, 1) == 1) {
+        ball->speedX = speedX;
+        ball->speedY = speedY;
+    } else {
+        ball->speedX = -speedX;
+        ball->speedY = -speedY;
+    }
+}
+
+void ballReset() {
+
+}
+
+void calculatePaddles(Paddle *p1, Paddle *p2, int isPlayer2Enabled) {
+    calculatePlayer(p1, KEY_W, KEY_S);
+
+    if(isPlayer2Enabled == 1) {
+        calculatePlayer(p2, KEY_UP, KEY_DOWN);
+    } else {
+        calculateCPU(p2);
+    }
+}
+
+int main(int argc, char **arvg) {
+    Paddle p1 = {30, SHEIGHT / 2 - 50, 30, 100, 20};
+    Paddle p2 = {SWIDTH - (p1.x + p1.width), p1.y, 30, 100, 20};
+    Ball ball = {SWIDTH/2, SHEIGHT/2, 10, 0, 0};
+    
+    ROUNDSTATUS round = WAIT;
+    
     InitWindow(SWIDTH, SHEIGHT, "Pong - Raylib/C implementation");
 
-    Vector2 p1 = {(float) pStartX, (float) SHEIGHT/2 - (float) pLenght/2};
-    Vector2 p2 = {(float) SWIDTH - (pStartX + pWidth), (float) SHEIGHT/2 - (float) pLenght/2};
-    Vector4 ball = {(float) SWIDTH/2 , (float) SHEIGHT/2, (float) 10, (float) 10};
-
     SetTargetFPS(20);
-    while(!WindowShouldClose()) {
+    while (!WindowShouldClose()) {
+        calculatePaddles(&p1, &p2, 1);
+
+        /*
+        switch(round){
+            case WAIT:
+
+                draw background, stationary elements in round start
+                wait for space/enter
+                exit when key is pressed
+                exit => round = RUNNING
+
+                break;
+            case RUNNING:
+
+                game runs, calculates and draws paddles and ball
+                ball increases speed on every bounce ??
+                when ball hits x 0 or x SWIDTH update score
+                round = WAIT
+                discount live or point (ft10?)
+
+                break;
+            case END:
+
+                one player lost all lives
+                declare winer, clear window, display winner
+                closes game and starts again
+
+                break;
+        }
+        */
+
+
+
         BeginDrawing();
         ClearBackground(BLACK);
-
-        //BorderLimits
-        DrawRectangle(0, 0, SWIDTH, borderTop, GRAY);
-        DrawRectangle(0, borderBottom, SWIDTH, borderBottom, GRAY);
-
-        //Center screen split
-        DrawLine(SWIDTH/2, 0, SWIDTH/2, SHEIGHT,GRAY);
-
-        //Ball
-        ballUpdate(&ball);
-        DrawCircle(ball.x, ball.y, 10, RAYWHITE);
-
-        // Paddles
-        checkUserInput(&p1, &p2, pSpeed, pLenght, p2Enabled);
-        DrawRectangle(p1.x ,p1.y, pWidth, pLenght, RAYWHITE);
-        DrawRectangle(p2.x ,p2.y, pWidth, pLenght, RAYWHITE);
-
+        // BorderLimits
+        DrawRectangle(0, 0, SWIDTH, TOP, GRAY);
+        DrawRectangle(0, BOTTOM, SWIDTH, BOTTOM, GRAY);
+        // Center screen split
+        DrawLine(SWIDTH / 2, 0, SWIDTH / 2, SHEIGHT, GRAY);
+        DrawRectangle(p1.x, p1.y, p1.width, p1.height, RAYWHITE);
+        DrawRectangle(p2.x, p2.y, p2.width, p2.height, RAYWHITE);
         EndDrawing();
     }
 
     CloseWindow();
 }
 
-
-
-void checkUserInput(Vector2 *p1, Vector2 *p2, int pSpeed, int pLength, int isPlayer2Enabled) {
-    // Player 1 update
-    if (IsKeyDown(KEY_W)) {
-        if(p1->y - pSpeed <= TOP) {
-            p1->y = TOP;
-        } else {
-            p1->y -= pSpeed;
-        }
-    }
-
-    if (IsKeyDown(KEY_S)) {
-        if(p1->y + pSpeed + pLength >= BOTTOM) {
-            p1->y = BOTTOM - pLength;
-        } else {
-            p1->y += pSpeed;
-        }
-    }
-
-
-    // Player 2
-    if(isPlayer2Enabled == 1) {
-
-        if (IsKeyDown(KEY_UP)) {
-            if(p2->y - pSpeed <= TOP) {
-                p2->y = TOP;
-            } else {
-                p2->y -= pSpeed;
-            }
-        }
-
-        if (IsKeyDown(KEY_DOWN)) {
-            if(p2->y + pSpeed + pLength >= BOTTOM) {
-                p2->y = BOTTOM - pLength;
-            } else {
-                p2->y += pSpeed;
-            }
-        }
-    }
-}
-
-void ballUpdate(Vector4 *ball) {
-    ball->x += ball->z;
-    ball->y += ball->w;
-}
