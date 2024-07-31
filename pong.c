@@ -1,4 +1,6 @@
 #include "raylib.h"
+#include "stdio.h"
+#include "stdlib.h"
 
 typedef struct {
     int x;
@@ -11,7 +13,8 @@ typedef struct {
 typedef struct {
     int x;
     int y;
-    int radius;
+    int height;
+    int width;
     int speedX;
     int speedY;
 } Ball;
@@ -28,6 +31,7 @@ typedef enum {
 #define SHEIGHT 500
 #define TOP 30
 #define BOTTOM SHEIGHT - TOP
+#define BALLSPEED 20
 
 void calculatePlayer(Paddle *p, KeyboardKey up, KeyboardKey down) {
     if (IsKeyDown(up)) {
@@ -49,21 +53,30 @@ void calculatePlayer(Paddle *p, KeyboardKey up, KeyboardKey down) {
 
 void calculateCPU(Paddle *CPU) {}
 
-void ballLaunch(Ball *ball, int speedX, int speedY) {
-    if (GetRandomValue(0, 1) == 1) {
-        ball->speedX = speedX;
-        ball->speedY = speedY;
+void ballLaunch(Ball *ball) {
+    int randX = GetRandomValue(0, 1);
+    int randY = GetRandomValue(0, 1);
+
+    if (randX == 1) {
+        /* ball->speedX = BALLSPEED; */
     } else {
-        ball->speedX = -speedX;
-        ball->speedY = -speedY;
+        /* ball->speedX = -BALLSPEED; */
+    }
+
+    if (randY == 1) {
+        ball->speedY = BALLSPEED;
+    } else {
+        ball->speedY = -BALLSPEED;
     }
 }
 
-void ballReset(Ball *ball) {
-    ball->x = SHEIGHT / 2;
-    ball->y = SWIDTH / 2;
-    ball->speedX = 0;
-    ball->speedY = 0;
+void ballReset(Ball *ball, int *bounces) {
+    ball->x = SWIDTH / 2 - (int)ball->width / 2;
+    ball->y = SHEIGHT / 2 - (int)ball->height / 2;
+    ball->speedX = 0; //BALLSPEED;
+    ball->speedY = BALLSPEED;
+
+    bounces = 0;
 }
 
 void paddleReset(Paddle *p1, Paddle *p2) {
@@ -96,28 +109,19 @@ void DrawBackground() {
 }
 
 void DrawBall(Ball *b, Color color) {
-    DrawCircle(b->x, b->y, b->radius, color);
+    DrawRectangle(b->x, b->y, b->width, b->height, color);
 }
 
 void calculateBallNextStep(Ball *b) {
-    int nextStepX = b->x + b->speedX + (int)b->radius / 2;
-    int nextStepY = b->y + b->speedY + (int)b->radius / 2;
-    // check bounce
-    // if bounce, speed up ball
-    // if bounce, check angle
+    int nextStepX = b->x + b->speedX;
+    int nextStepY = b->y + b->speedY;
 
-    // check collision on either side of the screen
-    if (b->speedX > 0) {
-    } else {
-    }
-
-    if (nextStepY <= TOP || nextStepY >= BOTTOM) {
+    if (b->speedY < 0 && nextStepY < TOP) {  // UP
+        b->speedY *= -1;
+    } else if (b->speedY > 0 && nextStepY + b->height > BOTTOM) {  // DOWN
         b->speedY *= -1;
     }
 
-    if (nextStepX <= 0 || nextStepX >= SWIDTH + (int)b->radius) {
-        b->speedX *= -1;
-    }
 
 
     b->x += b->speedX;
@@ -127,18 +131,24 @@ void calculateBallNextStep(Ball *b) {
 int main(int argc, char **arvg) {
     Paddle p1 = {30, SHEIGHT / 2 - 50, 30, 100, 20};
     Paddle p2 = {SWIDTH - (p1.x + p1.width), p1.y, 30, 100, 20};
-    Ball ball = {SWIDTH / 2, SHEIGHT / 2, 10, 25, 25};
+    Ball ball = {SWIDTH / 2, SHEIGHT / 2, 15, 15, 0, 0};
+    int bounces = 0;
+
+    int i = 0;
 
     ROUNDSTATUS round = WAIT;
 
     InitWindow(SWIDTH, SHEIGHT, "Pong - Raylib/C implementation");
 
-    SetTargetFPS(20);
+    SetTargetFPS(30);
     while (!WindowShouldClose()) {
+        printf(
+            "Step: %d | ballX: %d | ballY: %d | ballSpeedX: %d | ballSpeedY: "
+            "%d \n",
+            i, ball.x, ball.y, ball.speedX, ball.speedY);
+
         switch (round) {
             case WAIT:
-                paddleReset(&p1, &p2);
-
                 BeginDrawing();
                 ClearBackground(BLACK);
 
@@ -158,12 +168,10 @@ int main(int argc, char **arvg) {
                 break;
             case RUNNING:
                 if (ball.speedX == 0 && ball.speedY == 0) {
-                    ballLaunch(&ball, 1, 1);
+                    ballLaunch(&ball);
                 }
 
                 calculatePaddles(&p1, &p2, 1);
-
-                // check collision
 
                 calculateBallNextStep(&ball);
 
@@ -195,6 +203,8 @@ int main(int argc, char **arvg) {
         // DrawRectangle(0, 0, SWIDTH, TOP, GRAY);
         // DrawRectangle(0, BOTTOM, SWIDTH, BOTTOM, GRAY);
         // DrawLine(SWIDTH / 2, 0, SWIDTH / 2, SHEIGHT, GRAY);
+
+        i += 1;
     }
 
     CloseWindow();
